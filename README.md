@@ -6,7 +6,7 @@ The code in this repository is a demonstration. Please do not use in production.
 
 ## Introduction
 
-This demonstration ties together with the [Jetstack blogpost on Tekton](https://blog.jetstack.io/blog/tekton/). Please read this blogpost to familiarise yourself with Tekton's underlying concepts.
+This demonstration ties together with the [Jetstack blogpost on Tekton](https://blog.jetstack.io/blog/exploring-tekton/). Please read this blogpost to familiarise yourself with Tekton's underlying concepts.
 
 At the end of the demonstration, you will have a [simple website](https://github.com/paulbouwer/hello-kubernetes) being served from Kubernetes. Using Tekton, the container image used to serve the website will have been built from within the same Kubernetes cluster that serves the website. As Tekton `TaskRun`s execute in a Kubernetes Pod, it's possible to influence how these workloads are scheduled. In this demo, the website is served from `n1-standard-1` nodes, while the CI/CD is carried out on pre-emptible `f1-micro` nodes.
 
