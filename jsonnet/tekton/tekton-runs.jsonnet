@@ -1,5 +1,5 @@
 local tekton_taskrun = import './libraries/tekton-taskrun.libsonnet';
-local tekton_task = import './libraries/kaniko-task.libsonnet';
+local tekton_task = import './libraries/tekton-task.libsonnet';
 local Kube = import "../kube.libsonnet";
 
 local buildname = std.extVar('BUILD_NAME');

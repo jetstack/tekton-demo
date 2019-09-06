@@ -14,7 +14,6 @@ buildname:: error "buildname is required",
   "spec": {
     "taskRef": {
       "name": $.taskref,
-      "namespace": $.namespace,
     },
     "affinity": {
     "nodeAffinity": {
@@ -35,16 +34,12 @@ buildname:: error "buildname is required",
     }
     }
     },
-    "trigger": {
-      "type": "manual"
-    },
     "inputs": {
       "resources": [
         {
           "name": (std.join("-", ["git", $.buildname])),
           "resourceRef": {
             "name": (std.join("-", ["git", $.buildname])),
-            "namespace": $.namespace,
           }
         }
       ],

@@ -15,7 +15,6 @@ buildname:: error "buildname is required",
       "resources": [
         {
           "name": (std.join("-",["git", $.buildname])),
-          "namespace": $.namespace,
           "type": "git"
         }
       ],

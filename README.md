@@ -54,13 +54,13 @@ This will output a JSON file to the repository's `secrets/` directory, where the
 
 ### Infrastructure
 
-Run `make demo_infra` to create a GKE cluster with two node pools: `web-backend` to serve the website, and a preemptible `cicd` node pool to run Tekton pipelines.
+Run `make demo_infra` to create a GKE cluster with two node pools: `web-backend` to serve the website, and a pre-emptible `cicd` node pool to run Tekton pipelines.
 
 ### Tekton resources
 
 Run `make demo_resources` to install Tekton on the cluster (in the `tekton-pipelines` namespace), along with a demo website (in the `website-dev` namespace).
 
-Run `make tekton_trigger` to create a build.
+Run `make tekton_trigger` to run a build.
 
 `make tekton_pretty` will output some relevant information from the build steps. As a Tekton Run is just another Kubernetes object, its outputs that can be logged and read like any other resource using `kubectl get <POD_NAME> -o yaml`. We can also follow the logs of the containers running within the Pod using `kubectl -n cicd logs -f <POD_NAME> <CONTAINER>`.
 
@@ -72,11 +72,11 @@ Within a few minutes, GKE will provision an IP address for your LoadBalancer Ser
 kubectl --namespace website-dev get svc
 ```
 
-Once the image has been built and deployed using `make tekton_trigger`, the website will be served at this external IP address.
+Once the image has been built (using `make tekton_trigger`) and deployed (using `make website_deploy`), the website will be served at this external IP address.
 
 ### Cleanup
 
-Don't forget to delete the cluster using `make gke_delete` once you're finished. Also delete any container images that have been pushed to your Container Registry. Run `make kaniko_sa_delete` to delete the Kaniko Service Account that's used to authenticate between the Kubernetes cluster and Google Container Registry.
+Don't forget to delete the cluster using `make demo_delete` once you're finished, which will delete the Kaniko ServiceAccount and the demonstration's GKE cluster. Also delete any container images that have been pushed to your Container Registry.
 
 ## Further experimentation
 
