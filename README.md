@@ -72,7 +72,7 @@ Within a few minutes, GKE will provision an IP address for your LoadBalancer Ser
 kubectl --namespace website-dev get svc
 ```
 
-Once the image has been built and deployed using `make tekton_trigger`, the website will be served at this external IP address.
+Once the image has been built (using `make tekton_trigger`) and deployed (using `make website_deploy`), the website will be served at this external IP address.
 
 ### Cleanup
 
