@@ -25,7 +25,7 @@ PATCH := 1
 IMAGE_TAG := ${MAJOR}-${MINOR}-${PATCH}
 ###############################################################
 
-TEKTON_VERSION := 0.5.2
+TEKTON_VERSION := 0.6.0
 
 KO_DOCKER_REPO := eu.gcr.io/${GCP_PROJECT}
 
@@ -50,11 +50,13 @@ check_requirements: ## Check that required programs are installed in $PATH
 ###############################################################
 
 
-.PHONY: demo_infra demo_resource demo_delete
+.PHONY: demo_infra demo_resources demo_delete
 ##@ Demonstration
-demo_infra: check_requirements gcp_info gke_create gke_get_creds  ## Setup infrastructure for demo (imperatively)
+demo_infra: check_requirements gcp_info gke_create gke_get_creds ## Setup infrastructure for demo (imperatively)
 
-demo_resource: check_requirements tekton_initialise tekton_resource_apply website_deploy ## Deploy resources for demo (imperatively)
+demo_resources: check_requirements tekton_initialise tekton_resource_apply website_deploy ## Deploy resources for demo (imperatively)
+
+demo_delete: gke_delete kaniko_sa_delete
 
 .PHONY: gcp_info gcr_list_images gke_info gke_create gke_get_creds gke_delete
 ##@ Google Cloud Platform
@@ -79,31 +81,32 @@ gke_create: ## Create GKE cluster
 	 echo "Creating ${CLUSTER_NAME} in ${GCP_ZONE}"; \
 	  gcloud container clusters create \
 	  ${CLUSTER_NAME} \
-	    --zone ${GCP_ZONE} \
-	  	--cluster-version ${K8S_VERSION} \
-	  	  --machine-type ${MACHINE_TYPE} \
-	  		--num-nodes=1 --preemptible --no-enable-autoupgrade \
-	  		--issue-client-certificate --enable-basic-auth \
-	  		--metadata disable-legacy-endpoints=true \
+		--zone ${GCP_ZONE} \
+		--cluster-version ${K8S_VERSION} \
+		  --machine-type ${MACHINE_TYPE} \
+			--num-nodes=1 --preemptible --no-enable-autoupgrade \
+			--issue-client-certificate --enable-basic-auth \
+			--metadata disable-legacy-endpoints=true \
 				--disk-type=pd-ssd --disk-size=10GB \
   				--no-enable-cloud-logging --no-enable-cloud-monitoring \
-	  		--no-enable-ip-alias --no-enable-autoupgrade; \
+				--no-enable-ip-alias --no-enable-autoupgrade; \
 	  gcloud container node-pools create web-backend \
-	    --cluster ${CLUSTER_NAME} \
-	  	  --zone ${GCP_ZONE} \
-	    		--machine-type ${MACHINE_TYPE} \
-	    		--num-nodes=2 --enable-autorepair \
+		--cluster ${CLUSTER_NAME} \
+		  --zone ${GCP_ZONE} \
+				--machine-type ${MACHINE_TYPE} \
+				--num-nodes=2 --enable-autorepair \
 				--disk-type=pd-ssd --disk-size=10GB \
-	    		--metadata disable-legacy-endpoints=true; \
+				--metadata disable-legacy-endpoints=true; \
 	  gcloud container node-pools create cicd \
-	    --cluster ${CLUSTER_NAME} \
-	    	--zone ${GCP_ZONE} \
-	    	--machine-type ${SMALL_MACHINE_TYPE} \
-	    	--num-nodes=2 --enable-autorepair --preemptible \
+		--cluster ${CLUSTER_NAME} \
+			--zone ${GCP_ZONE} \
+			--machine-type ${SMALL_MACHINE_TYPE} \
+	    	--num-nodes=2 --enable-autorepair \
+			--preemptible \
 			--disk-type=pd-ssd --disk-size=10GB \
 	    	--metadata disable-legacy-endpoints=true; \
 	  gcloud container node-pools delete default-pool \
-	    --cluster=${CLUSTER_NAME} --zone ${GCP_ZONE} --quiet; \
+		--cluster=${CLUSTER_NAME} --zone ${GCP_ZONE} --quiet; \
 	fi
 
 gke_get_creds: ## Get GKE cluster credentials
@@ -182,6 +185,8 @@ website_validate:
 	| kubectl apply --recursive=true --filename - --validate=true --dry-run=true 
 
 website_deploy: website_validate ## Deploy website
+	@kubectl create namespace website-dev --dry-run=true --output=yaml \
+	| kubectl apply -f -
 	@kubecfg show ${PROJECT_DIR}/jsonnet/website/website.jsonnet \
 	-V BUILD_NAME=${BUILD_NAME} -V IMAGE_TAG="${IMAGE_TAG}" -V GCR_REGISTRY="${KO_DOCKER_REPO}" \
 	| kubectl apply --recursive=true --filename -
@@ -192,7 +197,7 @@ kaniko_sa_create: ## Create a Service Account for Kaniko with storage admin role
 	gcloud iam service-accounts create kaniko --display-name kaniko
 	gcloud projects add-iam-policy-binding ${GCP_PROJECT} \
 	 --member serviceAccount:kaniko@${GCP_PROJECT}.iam.gserviceaccount.com \
-	 --role roles/storage.admin 
+	 --role roles/storage.admin
 
 kaniko_sa_secret_create: ## Create kaniko-secret.json (will be applied as Kubernetes Secret)
 	gcloud iam service-accounts keys create ${PROJECT_DIR}/secrets/kaniko-secret.json \
@@ -210,6 +215,6 @@ kaniko_sa_delete: ## Remove the Kaniko Service Account and its role binding
 kaniko_apply_secret: ## Apply kaniko-secret.json
 	@kubectl create namespace cicd --dry-run=true --output=yaml \
 	| kubectl apply -f -
-	@kubectl -n cicd create secret generic kaniko-secret \
+	@kubectl --namespace cicd create secret generic kaniko-secret \
 	 --from-file=${PROJECT_DIR}/secrets/kaniko-secret.json --dry-run=true --output=yaml \
 	| kubectl apply -f -
